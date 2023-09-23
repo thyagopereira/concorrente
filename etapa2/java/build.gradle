@@ -8,3 +8,10 @@ task runApp(type: JavaExec) {
 
     args '../dataset'
 }
+
+task runConcurrent(type: JavaExec) {
+    main = 'WordCountRunnable'
+    classpath sourceSets.main.runtimeClasspath
+
+    args '../dataset'
+}

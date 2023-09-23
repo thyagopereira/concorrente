@@ -8,9 +8,9 @@ import java.util.concurrent.Semaphore;
 import java.util.List;
 import java.util.ArrayList;
 
+// A primeira gravacao foi perdida, gravando agora tentando solucionar a condicao de corrida.
 class WordCounter implements Runnable {
 	private File file;
-	private int localCount = 0;
 	private Semaphore mutex;
 
 	public WordCounter(File file, Semaphore mutex) {
@@ -20,12 +20,18 @@ class WordCounter implements Runnable {
 
 	@Override
 	public void run(){
+		int localCount = 0;
 		try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
+			StringBuilder content = new StringBuilder();
 			String line;
+
 			while ((line = reader.readLine()) != null) {
-				String[] words = line.split("\\s+");
-				localCount += words.length;
+				content.append(line).append("\n");
 			}
+
+			reader.close();
+			String[] words = content.toString().split("\\s+");
+			localCount = words.length;
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -49,11 +55,10 @@ public class WordCountRunnable {
    		       System.exit(1);
         	}
         	File rootDir = new File(args[0]);
-        	File[] subdirs = rootDir.listFiles();
         	Semaphore mutex = new Semaphore(1);
 		
 		if (rootDir.exists() && rootDir.isDirectory()){
-			ExecutorService exec = Executors.newFixedThreadPool(3);
+			ExecutorService exec = Executors.newFixedThreadPool(4);
 
 			List<Thread> threads = new ArrayList<>();
 			for (File file: rootDir.listFiles()) {

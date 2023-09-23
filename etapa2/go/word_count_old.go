@@ -5,43 +5,43 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
-	"strings" 
-	"sync" 
+	"strings"
 )
 
+// Count the number of words in `fileContent`.
+func wc(fileContent string) int {
+	words := strings.Fields(fileContent)
+	return len(words)
+}
+
 // Count the number of words in the file at `filePath`.
-func wc_file(filePath string){
-	defer wg.Done()
+func wc_file(filePath string) int {
 	fileContent, err := ioutil.ReadFile(filePath)
 	if err != nil {
 		log.Fatal(err)
 	}
-	
-	mu.Lock()
-	numberOfWords += len(strings.Fields(string(fileContent)))
-	mu.Unlock()
+
+	return wc(string(fileContent))
 }
 
 // Count the number of words in all files directly within `directoryPath`.
 // Files in subdirectories are not considered.
-func wc_dir(directoryPath string){
-	defer dirWg.Done()
-
+func wc_dir(directoryPath string) int {
 	files, err := ioutil.ReadDir(directoryPath)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	for _, file := range files {
-		if !file.IsDir() { 
-			filePath := directoryPath + "/" + file.Name()
-			wg.Add(1)
-			go wc_file(filePath)
-		}
+	numberOfWords := 0
 
+	for _, file := range files {
+		if !file.IsDir() {
+			filePath := directoryPath + "/" + file.Name()
+			numberOfWords += wc_file(filePath)
+		}
 	}
-	
-	wg.Wait()
+
+	return numberOfWords
 }
 
 // Calculate the number of words in the files stored under the directory name
@@ -66,30 +66,22 @@ func wc_dir(directoryPath string){
 // │     ├── file
 // │     ├── ...
 // │     └── file
-
-// Definindo variaveis globais
-var numberOfWords = 0
-var wg sync.WaitGroup
-var dirWg sync.WaitGroup
-var mu sync.Mutex
-
 func main() {
-	rootPath := os.Args[1] 
+	rootPath := os.Args[1]
 
 	files, err := ioutil.ReadDir(rootPath)
 	if err != nil {
 		log.Fatal(err)
 	}
 
+	numberOfWords := 0
+
 	for _, file := range files {
 		if file.IsDir() {
-			dirWg.Add(1)
 			directoryPath := rootPath + "/" + file.Name()
-			
-			go wc_dir(directoryPath)
+			numberOfWords += wc_dir(directoryPath)
 		}
 	}
-	
-	dirWg.Wait() 
+
 	fmt.Println(numberOfWords)
 }
